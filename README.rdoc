@@ -1,16 +1,13 @@
 == Welcome to xls_porter
 
-Simple data export to XLS and import from XLS to ActiveRecord model. The
-source is available at https://github.com/mr5080att/xls_porter.git.
+Simple data export to XLS and import from XLS to ActiveRecord model. The source is available at https://github.com/mr5080att/xls_porter.git.
 
 == Dependencies
 
 1. CarrierWave for file uploading.
 2. Ruby Spreadsheet.
 
-== Mixins
-
-1. Extend an existing class.
+== Mixins: Extending a class.
 
   class MyXlsPorter
     extend XlsPorter
@@ -18,8 +15,7 @@ source is available at https://github.com/mr5080att/xls_porter.git.
 
   MyXlsPorter.to_xls(User.all, %w(id name first_name last_name), "Users")
 
-2. Include in a class. In this example, the xls_porter is included in Rails
-class ApplicationController.
+== Mixins: Including in a class.
 
   file: app/controllers/application_controller.rb
 
