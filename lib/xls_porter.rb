@@ -41,51 +41,54 @@ module XlsPorter
     sheet.each 1 do |row|
       id = row[id_idx]
       record = nil
+      update = nil
+      update_notes = nil
       if id.nil?
         record = model.new
-        record["update"] = "new"
+        update = "new"
       else
         begin
           record = model.find(id)
-          record["update"] = "exist"
+          update = "exist"
         rescue
           record = model.new
-          record["update"] = "new"
+          update = "new"
         end
       end
       (0..(columns.size - 1)).each do |i|
         value = row[i]
         value = value.strip if value.is_a?(String)
         column = columns[i]
-        if column == "id" and record["update"] == "new"
+        if column == "id" and update == "new"
           record["id"] = value
         elsif ignore_columns.include?(column)
           #skip if column is ignored
         elsif record[column].blank? and value.blank?
           #skip if both are either nil or empty
         elsif [DateTime, Time, Date].include?(value.class)
-          #puts "#{column} #{record[column]} == #{value} ? #{record[column].to_i == value.to_i}"
-          #TODO comparator and assigner for date types
+          if record[column].to_f != value.to_f
+            record[column] = value
+          end
         else
           if record[column] != value
             record[column] = value
-            record["update"] = "updated" if record["update"] == "exist"
-            record["update_notes"] = [] if record["update_notes"].nil?
-            record["update_notes"] << column
+            update = "updated" if update == "exist"
+            update_notes = [] if update_notes.nil?
+            update_notes << column
           end
         end
       end
       #track all updates
-      updates << record if %w(new updated).include?(record["update"]) #not record.changed.empty?
-    end
-    #commit changes only after processing all updates
-    updates.each do |update|
-      begin
-        update.save
-      rescue Exception => exception
-        #track validation exception
-        update["update"] = "exception"
-        update["update_notes"] = exception.to_s
+      if not record.changed.empty?
+        begin
+          record.save
+        rescue Exception => exception
+          update = "exception"
+          update_notes = exception.to_s
+        end
+        record["update"] = update
+        record["update_notes"] = update_notes
+        updates << record # if %w(new updated).include?(update) #not record.changed.empty?
       end
     end
     return {:columns => (%w(update update_notes) + columns), :updates => updates, :model => model.name}
