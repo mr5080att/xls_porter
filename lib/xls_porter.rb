@@ -59,19 +59,18 @@ module XlsPorter
         value = row[i]
         value = value.strip if value.is_a?(String)
         column = columns[i]
+        attribute = record.read_attribute(column)
         if column == "id" and update == "new"
-          record["id"] = value
+          eval("record.#{column}=value")
         elsif ignore_columns.include?(column)
           #skip if column is ignored
-        elsif record[column].blank? and value.blank?
+        elsif attribute.blank? and value.blank?
           #skip if both are either nil or empty
         elsif [DateTime, Time, Date].include?(value.class)
-          if record[column].to_f != value.to_f
-            record[column] = value
-          end
+          eval("record.#{column}=value") if attribute.to_f != value.to_f
         else
-          if record[column] != value
-            record[column] = value
+          if attribute != value
+            eval("record.#{column}=value")
             update = "updated" if update == "exist"
             update_notes = [] if update_notes.nil?
             update_notes << column
@@ -81,6 +80,7 @@ module XlsPorter
       #track all updates
       if not record.changed.empty?
         begin
+          record
           record.save
         rescue Exception => exception
           update = "exception"
