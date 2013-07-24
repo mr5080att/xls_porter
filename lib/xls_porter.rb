@@ -56,39 +56,46 @@ module XlsPorter
         end
       end
       (0..(columns.size - 1)).each do |i|
-        value = row[i]
-        value = value.strip if value.is_a?(String)
         column = columns[i]
-        attribute = record.read_attribute(column)
+        value = row[i]
+        puts "Column: #{column} Value: #{value.inspect}"
+        value = value.strip if value.is_a?(String)
+        value = value.value if value.is_a?(Spreadsheet::Formula)
         if column == "id" and update == "new"
-          eval("record.#{column}=value")
+          record[column] = value
         elsif ignore_columns.include?(column)
           #skip if column is ignored
-        elsif attribute.blank? and value.blank?
+        elsif record[column].blank? and value.blank?
           #skip if both are either nil or empty
         elsif [DateTime, Time, Date].include?(value.class)
-          eval("record.#{column}=value") if attribute.to_f != value.to_f
+          record[column] = value if record[column].to_f != value.to_f
         else
-          if attribute != value
-            eval("record.#{column}=value")
+          puts "Column: #{column} Record: #{record[column].to_s} Value: #{value.to_s}"
+          if record[column] != value
+            record[column] = value
             update = "updated" if update == "exist"
             update_notes = [] if update_notes.nil?
             update_notes << column
           end
         end
       end
+      puts "Record ID:#{record.id} new? #{record.new_record?} persisted? #{record.persisted?}"
+      puts "Record changed? #{not record.changed.empty?}"
       #track all updates
       if not record.changed.empty?
         begin
-          record
-          record.save
+          puts "Trying to save record..."
+          if record.save
+            puts "Record #{record.class}:#{record.id} saved #{record.persisted?}"
+          else
+            puts "Record Error #{record.errors.messages.inspect}"
+          end
         rescue Exception => exception
           update = "exception"
           update_notes = exception.to_s
+          puts "Exception: #{exception.message}"
         end
-        record["update"] = update
-        record["update_notes"] = update_notes
-        updates << record # if %w(new updated).include?(update) #not record.changed.empty?
+        updates << record.attributes.merge({ 'update' => update, 'update_notes' => update_notes }) # if %w(new updated).include?(update) #not record.changed.empty?
       end
     end
     return {:columns => (%w(update update_notes) + columns), :updates => updates, :model => model.name}

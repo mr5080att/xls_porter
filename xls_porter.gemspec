@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'xls_porter'
-  s.version     = '1.0'
+  s.version     = '1.2.3'
   s.date        = Time.now.strftime('%Y-%m-%d')
   s.summary     = 'Export to and Import from XLS'
   s.description = 'Export to and Import from XLS for Ruby and Rails apps'
